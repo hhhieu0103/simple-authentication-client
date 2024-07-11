@@ -1,0 +1,24 @@
+<div class="w-100 h-100 d-flex justify-content-center align-items-center">
+    <form [formGroup]="loginForm" (ngSubmit)="login()" class="d-flex flex-column" [style.width]="formWidth">
+        <mat-form-field>
+            <mat-label>Email or username</mat-label>
+            <input matInput type="text" formControlName="account" />
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Password</mat-label>
+            <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="password" />
+            <button mat-icon-button matSuffix type="button" (click)="togglePassword($event)"
+                [attr.aria-label]="'Toggle password'" [attr.aria-pressed]="showPassword()">
+                <mat-icon>{{showPassword() ? 'visibility' : 'visibility_off'}}</mat-icon>
+            </button>
+        </mat-form-field>
+        <div class="d-flex justify-content-between" style="margin-bottom: 20px;">
+            <mat-checkbox formControlName="keepLogin">Keep login</mat-checkbox>
+            <a routerLink="/" style="line-height: 38px; font-style: italic;">Forgot password?</a>
+        </div>
+        <div class="d-flex" style="gap: 10px;">
+            <button mat-flat-button type="submit" class="w-100">Login</button>
+            <button mat-stroked-button type="button" routerLink="/signup" class="w-100">Signup</button>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,40 @@
+<div class="w-100 h-100 d-flex justify-content-center align-items-center">
+    <form [formGroup]="signupForm" (ngSubmit)="signup()" class="d-flex flex-column" [style.width]="formWidth">
+        <mat-form-field>
+            <mat-label>Username</mat-label>
+            <input matInput type="text" formControlName="username" />
+            @if (shouldShowError('username')) {
+            <mat-error>{{getErrorMessages('username')}}</mat-error>
+            }
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" />
+            @if (shouldShowError('email')) {
+            <mat-error>{{getErrorMessages('email')}}</mat-error>
+            }
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Password</mat-label>
+            <input matInput type="password" formControlName="password" />
+            <mat-icon matSuffix [matTooltip]="passwordHint" matTooltipClass="password-hint">info_outline</mat-icon>
+            @if (shouldShowError('password')) {
+            <mat-error>{{getErrorMessages('password')}}</mat-error>
+            }
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Confirm your password</mat-label>
+            <input matInput type="password" formControlName="passwordConfirmation" />
+            @if (shouldShowError('passwordConfirmation')) {
+            <mat-error>{{getErrorMessages('passwordConfirmation')}}</mat-error>
+            }
+        </mat-form-field>
+        <div class="d-flex justify-content-between" style="margin-bottom: 20px;">
+            <mat-checkbox formControlName="policyAgreement">I agree with
+                <a href="/" (click)="openPolicies($event)" style="font-style: italic;">policies</a>
+            </mat-checkbox>
+        </div>
+        <button mat-flat-button type="submit" class="w-100" style="margin-bottom: 10px;">Signup</button>
+        <button mat-stroked-button type="button" routerLink="/login" class="w-100">Already have account?</button>
+    </form>
+</div>
