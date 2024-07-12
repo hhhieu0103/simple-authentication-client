@@ -49,8 +49,8 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 .password-hint {
     white-space: pre-line;
-}
 
-.mat-mdc-tooltip-surface {
-    text-align: left !important;
+    .mat-mdc-tooltip-surface {
+        text-align: start !important;
+    }
 }

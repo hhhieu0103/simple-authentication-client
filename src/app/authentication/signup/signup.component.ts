@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms'
 import { RouterLink } from '@angular/router';
+import { NgOptimizedImage } from '@angular/common';
 
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatInputModule } from '@angular/material/input';
@@ -11,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 
 import { passwordConfirmationValidator } from '../shared/password-confirmation.directive';
+import { CapsLockDetectDirective } from '../shared/caps-lock-detect.directive';
 
 @Component({
   selector: 'app-signup',
@@ -18,12 +20,14 @@ import { passwordConfirmationValidator } from '../shared/password-confirmation.d
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    NgOptimizedImage,
     MatInputModule,
     MatButtonModule,
     MatFormFieldModule,
     MatCheckboxModule,
     MatIconModule,
-    MatTooltip
+    MatTooltip,
+    CapsLockDetectDirective
   ],
   templateUrl: './signup.component.html',
   styleUrl: './signup.component.css'
@@ -32,6 +36,7 @@ export class SignupComponent {
   breakpointObserver = inject(BreakpointObserver)
   formWidth = ''
   passwordHint = 'Password must have at least:\n- 1 lowercase character\n- 1 uppercase character\n- 1 special character\n- 1 number'
+  capsLockState = false
 
   signupForm = new FormGroup({
     username: new FormControl('', [

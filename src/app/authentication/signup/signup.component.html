@@ -1,28 +1,38 @@
-<div class="w-100 h-100 d-flex justify-content-center align-items-center">
+<div class="w-100 h-100 d-flex flex-column justify-content-center align-items-center">
+    <div class="d-flex flex-column align-items-center">
+        <img ngSrc="/assets/slime.png" width="150" height="150" priority />
+        <h2 class="mat-headline-large" style="text-align: center;">Create new account</h2>
+    </div>
     <form [formGroup]="signupForm" (ngSubmit)="signup()" class="d-flex flex-column" [style.width]="formWidth">
-        <mat-form-field>
+        <mat-form-field appearance="outline">
             <mat-label>Username</mat-label>
             <input matInput type="text" formControlName="username" />
             @if (shouldShowError('username')) {
             <mat-error>{{getErrorMessages('username')}}</mat-error>
             }
         </mat-form-field>
-        <mat-form-field>
+        <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
             <input matInput type="email" formControlName="email" />
             @if (shouldShowError('email')) {
             <mat-error>{{getErrorMessages('email')}}</mat-error>
             }
         </mat-form-field>
-        <mat-form-field>
+        <mat-form-field appearance="outline" appCapsLockDetect (capsLockState)="capsLockState = $event">
             <mat-label>Password</mat-label>
             <input matInput type="password" formControlName="password" />
             <mat-icon matSuffix [matTooltip]="passwordHint" matTooltipClass="password-hint">info_outline</mat-icon>
             @if (shouldShowError('password')) {
             <mat-error>{{getErrorMessages('password')}}</mat-error>
             }
+            @if (capsLockState) {
+            <mat-hint align="end">
+                <mat-icon aria-hidden="false" aria-label="Capslock icon" fontIcon="lock"></mat-icon>
+                Your capslock is ON
+            </mat-hint>
+            }
         </mat-form-field>
-        <mat-form-field>
+        <mat-form-field appearance="outline">
             <mat-label>Confirm your password</mat-label>
             <input matInput type="password" formControlName="passwordConfirmation" />
             @if (shouldShowError('passwordConfirmation')) {
