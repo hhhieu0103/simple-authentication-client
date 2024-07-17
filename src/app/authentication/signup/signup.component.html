@@ -20,29 +20,38 @@
         </mat-form-field>
         <mat-form-field appearance="outline" appCapsLockDetect (capsLockState)="capsLockState = $event">
             <mat-label>Password</mat-label>
-            <input matInput type="password" formControlName="password" />
+            <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                (focus)="isPasswordFocus = true" (blur)="isPasswordFocus = false" />
+            @if (capsLockState && isPasswordFocus) {
+            <mat-icon matSuffix matTooltip="Your capslock is ON">lock</mat-icon>
+            }
             <mat-icon matSuffix [matTooltip]="passwordHint" matTooltipClass="password-hint">info_outline</mat-icon>
+            <button mat-icon-button matSuffix type="button" (click)="togglePassword($event)"
+                [attr.aria-label]="'Toggle password'" [attr.aria-pressed]="showPassword()">
+                <mat-icon>{{showPassword() ? 'visibility' : 'visibility_off'}}</mat-icon>
+            </button>
             @if (shouldShowError('password')) {
             <mat-error>{{getErrorMessages('password')}}</mat-error>
-            }
-            @if (capsLockState) {
-            <mat-hint align="end">
-                <mat-icon aria-hidden="false" aria-label="Capslock icon" fontIcon="lock"></mat-icon>
-                Your capslock is ON
-            </mat-hint>
             }
         </mat-form-field>
         <mat-form-field appearance="outline">
             <mat-label>Confirm your password</mat-label>
-            <input matInput type="password" formControlName="passwordConfirmation" />
+            <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="passwordConfirmation"
+                (focus)="isConfirmationFocus = true" (blur)="isConfirmationFocus = false" />
+            @if (capsLockState && isConfirmationFocus) {
+            <mat-icon matSuffix matTooltip="Your capslock is ON">lock</mat-icon>
+            }
             @if (shouldShowError('passwordConfirmation')) {
             <mat-error>{{getErrorMessages('passwordConfirmation')}}</mat-error>
             }
         </mat-form-field>
-        <div class="d-flex justify-content-between" style="margin-bottom: 20px;">
-            <mat-checkbox formControlName="policyAgreement">I agree with
+        <div class="d-flex flex-column justify-content-between" style="margin-bottom: 20px;">
+            <mat-checkbox formControlName="policyAgreement" required>I agree with
                 <a href="/" (click)="openPolicies($event)" style="font-style: italic;">policies</a>
             </mat-checkbox>
+            @if (shouldShowError('policyAgreement')) {
+            <mat-error class="mat-body-medium">Please accept the policies before continuing</mat-error>
+            }
         </div>
         <button mat-flat-button type="submit" class="w-100" style="margin-bottom: 10px;">Signup</button>
         <button mat-stroked-button type="button" routerLink="/login" class="w-100">Already have account?</button>

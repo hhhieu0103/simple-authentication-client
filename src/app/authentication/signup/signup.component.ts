@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms'
 import { RouterLink } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
@@ -13,6 +13,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 
 import { passwordConfirmationValidator } from '../shared/password-confirmation.directive';
 import { CapsLockDetectDirective } from '../shared/caps-lock-detect.directive';
+import { AuthenticationService, Account } from '../shared/authentication.service';
 
 @Component({
   selector: 'app-signup',
@@ -34,9 +35,14 @@ import { CapsLockDetectDirective } from '../shared/caps-lock-detect.directive';
 })
 export class SignupComponent {
   breakpointObserver = inject(BreakpointObserver)
+  authService = inject(AuthenticationService)
   formWidth = ''
+  showPassword = signal(false)
   passwordHint = 'Password must have at least:\n- 1 lowercase character\n- 1 uppercase character\n- 1 special character\n- 1 number'
   capsLockState = false
+  isPasswordFocus = false
+  isConfirmationFocus = false
+  showAgreementError = false
 
   signupForm = new FormGroup({
     username: new FormControl('', [
@@ -63,6 +69,14 @@ export class SignupComponent {
     policyAgreement: new FormControl(false, Validators.requiredTrue)
   }, { validators: passwordConfirmationValidator })
 
+  get password() {
+    return this.signupForm.get('password')
+  }
+
+  get confirmation() {
+    return this.signupForm.get('passwordConfirmation')
+  }
+
   constructor() {
     this.breakpointObserver
       .observe([
@@ -79,6 +93,19 @@ export class SignupComponent {
         else if (state.breakpoints[Breakpoints.Large]) this.formWidth = '25%';
         else if (state.breakpoints[Breakpoints.XLarge]) this.formWidth = '20%';
       })
+
+    this.signupForm.setValue({
+      username: 'hieuho0103',
+      email: 'hieuho@gmail.com',
+      password: 'Hello123#',
+      passwordConfirmation: 'Hello123#',
+      policyAgreement: true
+    })
+  }
+
+  togglePassword(event: MouseEvent) {
+    this.showPassword.set(!this.showPassword())
+    event.stopPropagation()
   }
 
   openPolicies(event: MouseEvent) {
@@ -95,6 +122,7 @@ export class SignupComponent {
       case 'username':
       case 'email':
       case 'password':
+      case 'policyAgreement':
         return isControlEdited;
       case 'passwordConfirmation':
         return isControlEdited || this.signupForm.hasError('passwordConfirmation');
@@ -152,6 +180,20 @@ export class SignupComponent {
   }
 
   signup() {
-    alert('Done')
+    this.signupForm.markAllAsTouched()
+    if (this.signupForm.valid) {
+
+      // const email = this.signupForm.value.email
+      // const username = this.signupForm.value.username
+      // const password = this.signupForm.value.password
+      const { email, username, password } = this.signupForm.value
+
+      if (email && username && password) {
+        const acc: Account = { email, username, password }
+        // this.authService.signup(acc)
+        this.authService.setUpSecureConnection()
+      }
+
+    }
   }
 }
