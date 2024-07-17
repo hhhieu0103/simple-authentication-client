@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { mergeMap } from 'rxjs';
+import { map, mergeMap, Observable } from 'rxjs';
 
 export interface Account {
   username: string,
@@ -29,7 +29,14 @@ export class AuthenticationService {
   constructor() { }
 
   signup(account: Account) {
-
+    this.setUpSecureConnection().subscribe({
+      next: (serverPublicJwkStr) => {
+        console.log(serverPublicJwkStr)
+      },
+      error: (error) => {
+        console.log(error)
+      }
+    })
     //       return this.http.post(
     //         this.baseUrl + 'signup',
     //         encryptedAccount,
@@ -37,53 +44,56 @@ export class AuthenticationService {
 
   }
 
-  setUpSecureConnection() {
+  private setUpSecureConnection() {
     const clientPublicJwkStr = localStorage.getItem('clientPublicJwkStr')
     const clientPrivateJwkStr = localStorage.getItem('clientPrivateJwkStr')
     const serverPublicJwkStr = localStorage.getItem('serverPublicJwkStr')
 
     // Check if the app have all necessary keys for a secure connection
     if (!clientPublicJwkStr || !clientPrivateJwkStr || !serverPublicJwkStr) {
-      // Generate client keys
-      window.crypto.subtle.generateKey(
-        rsaGenerationObj, true, ["encrypt", "decrypt"]
-      ).then(keys => {
-
-        // Export client keys for transfering and storing
-        const clientPublicJwkPromise = window.crypto.subtle.exportKey('jwk', keys.publicKey)
-        const clientPrivateJwkPromise = window.crypto.subtle.exportKey('jwk', keys.privateKey)
-        // Wait for the keys to be exported
-        Promise.all([clientPublicJwkPromise, clientPrivateJwkPromise]).then(jwks => {
-          const clientPublicJwk = jwks[0]
-          const clientPrivateJwk = jwks[1]
-
-          // Make a request for exchanging public keys between client and server
-          this.http.post(
-            this.baseUrl + 'exchangePublicKey',
-            clientPublicJwk,
-            { responseType: 'text', withCredentials: true }
-          ).subscribe({
-            next: serverPublicJwkStr => {
-              // Store client keys and server public key in local storage
-              localStorage.setItem('clientPublicJwkStr', JSON.stringify(clientPublicJwk))
-              localStorage.setItem('clientPrivateJwkStr', JSON.stringify(clientPrivateJwk))
-              localStorage.setItem('serverPublicJwkStr', serverPublicJwkStr)
-            },
-            error: error => {
-              console.log(error)
-            }
+      return new Observable(subcriber => {
+        window.crypto.subtle.generateKey(rsaGenerationObj, true, ["encrypt", "decrypt"])
+          .then(cryptoKeyPair => {
+            subcriber.next(cryptoKeyPair)
+            subcriber.complete()
           })
-
-        }).catch(error => {
-          console.log(error)
-        })
-
-      }).catch(error => {
-        console.log(error)
+          .catch(error => subcriber.error(error))
       })
-    } else {
-      // The connection between server and client is already secure
-    }
+        .pipe(
+          mergeMap(cryptoKeyPair => {
+            // Export client keys for transfering and storing
+            const clientPublicJwkPromise = window.crypto.subtle.exportKey('jwk', (cryptoKeyPair as CryptoKeyPair).publicKey)
+            const clientPrivateJwkPromise = window.crypto.subtle.exportKey('jwk', (cryptoKeyPair as CryptoKeyPair).privateKey)
+            // Wait for the keys to be exported
+            return Promise.all([clientPublicJwkPromise, clientPrivateJwkPromise])
+          }),
+          mergeMap(jwks => {
+            const clientPublicJwk = jwks[0]
+            const clientPrivateJwk = jwks[1]
+            // Make a request for exchanging public keys between client and server
+            return this.http.post(
+              this.baseUrl + 'exchangePublicKey',
+              clientPublicJwk,
+              { responseType: 'text', withCredentials: true }
+            ).pipe(
+              map(serverPublicJwkStr => {
+                return { serverPublicJwkStr, clientPublicJwk, clientPrivateJwk }
+              })
+            )
+          }),
+          map(keys => {
+            // Store client keys and server public key in local storage
+            localStorage.setItem('clientPublicJwkStr', JSON.stringify(keys.clientPublicJwk))
+            localStorage.setItem('clientPrivateJwkStr', JSON.stringify(keys.clientPrivateJwk))
+            localStorage.setItem('serverPublicJwkStr', keys.serverPublicJwkStr)
+
+            return keys.serverPublicJwkStr
+          })
+        )
+    } else return new Observable(subcriber => {
+      subcriber.next(serverPublicJwkStr)
+      subcriber.complete()
+    })
   }
 
   private encryptMessage(encryptKey: CryptoKey, message: string) {

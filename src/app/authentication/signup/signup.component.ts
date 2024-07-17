@@ -190,8 +190,7 @@ export class SignupComponent {
 
       if (email && username && password) {
         const acc: Account = { email, username, password }
-        // this.authService.signup(acc)
-        this.authService.setUpSecureConnection()
+        this.authService.signup(acc)
       }
 
     }
