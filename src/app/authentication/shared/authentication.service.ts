@@ -1,6 +1,7 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { from, mergeMap, tap, of } from 'rxjs';
+import { E2EE_ENABLED } from '../../interceptors/e2ee.interceptor';
 
 export interface IAccount {
   username: string,
@@ -31,20 +32,14 @@ export class AuthenticationService {
   signup(account: IAccount) {
 
     this.setUpSecureConnection().pipe(
-      mergeMap(serverPublicJwkStr => this.encrypt(JSON.stringify(account))),
-
-      mergeMap(encryptedAccount => {
+      mergeMap(() => {
         return this.http.post(
           this.baseUrl + 'signup',
-          encryptedAccount,
-          {
-            headers: { 'Content-Type': 'application/octet-stream' },
-            withCredentials: true,
-            responseType: 'arraybuffer'
-          })
+          account,
+          { context: new HttpContext().set(E2EE_ENABLED, true) }
+        )
       }),
 
-      mergeMap(encryptedResponse => this.decrypt(encryptedResponse))
     ).subscribe({
       next: (res) => {
         console.log(res)
@@ -94,23 +89,5 @@ export class AuthenticationService {
       )
     }
     return of(serverPublicJwkStr)
-  }
-
-  async encrypt(message: string) {
-    const serverPublicJwkStr = localStorage.getItem('serverPublicJwkStr')
-    if (!serverPublicJwkStr) throw new Error('Missing server public key.')
-    const serverPublicJwk = JSON.parse(serverPublicJwkStr)
-    const serverPublicKey = await window.crypto.subtle.importKey('jwk', serverPublicJwk, rsa, true, ['encrypt'])
-    const encoded = new TextEncoder().encode(message)
-    return window.crypto.subtle.encrypt(rsa, serverPublicKey, encoded)
-  }
-
-  async decrypt(encrypted: ArrayBuffer) {
-    const clientPrivateJwkStr = localStorage.getItem('clientPrivateJwkStr')
-    if (!clientPrivateJwkStr) throw new Error('Missing client private key.')
-    const clientPrivateJwk = JSON.parse(clientPrivateJwkStr)
-    const clientPrivateKey = await window.crypto.subtle.importKey('jwk', clientPrivateJwk, rsa, true, ['decrypt']);
-    const decrypted = await window.crypto.subtle.decrypt(rsa, clientPrivateKey, encrypted);
-    return new TextDecoder().decode(decrypted);
   }
 }
