@@ -1,11 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpInterceptorFn } from '@angular/common/http';
 
-import { e2eeInterceptor } from './e2ee.interceptor';
+import { cryptographyInterceptor } from './cryptography.interceptor';
 
-describe('e2eeInterceptor', () => {
+describe('cryptographyInterceptor', () => {
   const interceptor: HttpInterceptorFn = (req, next) => 
-    TestBed.runInInjectionContext(() => e2eeInterceptor(req, next));
+    TestBed.runInInjectionContext(() => cryptographyInterceptor(req, next));
 
   beforeEach(() => {
     TestBed.configureTestingModule({});

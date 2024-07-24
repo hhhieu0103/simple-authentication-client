@@ -4,7 +4,8 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
-import { e2eeInterceptor } from './shared/e2ee.interceptor';
+import { cryptographyInterceptor } from './shared/cryptography.interceptor';
+import { keyCheckingInterceptor } from './shared/key-checking.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -12,7 +13,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     provideHttpClient(
-      withInterceptors([e2eeInterceptor])
+      withInterceptors([keyCheckingInterceptor, cryptographyInterceptor])
     )
   ]
 };

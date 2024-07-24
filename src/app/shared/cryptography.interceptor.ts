@@ -1,20 +1,9 @@
-import { HttpContextToken, HttpEventType, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
+import { HttpEventType, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { mergeMap, filter, map, tap, from } from 'rxjs';
+import { E2EE_ENABLED } from './key-checking.interceptor';
 
-export const E2EE_ENABLED = new HttpContextToken<boolean>(() => false)
-
-export const e2eeInterceptor: HttpInterceptorFn = (req, next) => {
+export const cryptographyInterceptor: HttpInterceptorFn = (req, next) => {
   if (req.context.get(E2EE_ENABLED)) {
-
-    const clientPublicJwkStr = localStorage.getItem('clientPublicJwkStr')
-    const clientPrivateJwkStr = localStorage.getItem('clientPrivateJwkStr')
-    const serverPublicJwkStr = localStorage.getItem('serverPublicJwkStr')
-
-    if (!clientPublicJwkStr || !clientPrivateJwkStr || !serverPublicJwkStr) {
-      const error = new Error('Cryptographic keys not found.')
-      error.name = 'missingKeys'
-      throw error
-    }
 
     let encryptObs = null
     if (typeof (req.body) == 'string') encryptObs = encrypt(req.body)
