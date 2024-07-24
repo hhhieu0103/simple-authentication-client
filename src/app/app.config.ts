@@ -4,7 +4,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
-import { e2eeInterceptor } from './interceptors/e2ee.interceptor';
+import { e2eeInterceptor } from './shared/e2ee.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
