@@ -26,7 +26,7 @@ export const cryptographyInterceptor: HttpInterceptorFn = (req, next) => {
       filter(event => event.type == HttpEventType.Response),
       tap(event => e = (event as HttpResponse<ArrayBuffer>)),
       mergeMap(event => decrypt((event as HttpResponse<ArrayBuffer>).body as ArrayBuffer)),
-      map(decrypted => e.clone({ body: decrypted }))
+      map(decrypted => e.clone({ body: JSON.parse(decrypted) }))
     );
   }
   return next(req);

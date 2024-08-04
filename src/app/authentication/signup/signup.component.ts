@@ -13,7 +13,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 
 import { passwordConfirmationValidator } from '../shared/password-confirmation.directive';
 import { CapsLockDetectDirective } from '../shared/caps-lock-detect.directive';
-import { AuthenticationService, IAccount } from '../shared/authentication.service';
+import { AuthenticationService, SignupInfo } from '../shared/authentication.service';
 
 @Component({
   selector: 'app-signup',
@@ -183,13 +183,10 @@ export class SignupComponent {
     this.signupForm.markAllAsTouched()
     if (this.signupForm.valid) {
 
-      // const email = this.signupForm.value.email
-      // const username = this.signupForm.value.username
-      // const password = this.signupForm.value.password
       const { email, username, password } = this.signupForm.value
 
       if (email && username && password) {
-        const acc: IAccount = { email, username, password }
+        const acc: SignupInfo = { email, username, password }
         this.authService.signup(acc)
       }
 

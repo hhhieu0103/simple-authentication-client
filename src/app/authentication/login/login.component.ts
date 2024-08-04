@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { ReactiveFormsModule, FormControl, FormGroup } from '@angular/forms'
+import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms'
 import { RouterLink } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 
@@ -12,6 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { CapsLockDetectDirective } from '../shared/caps-lock-detect.directive';
+import { AuthenticationService, LoginInfo } from '../shared/authentication.service';
 
 @Component({
   selector: 'app-login',
@@ -32,14 +33,15 @@ import { CapsLockDetectDirective } from '../shared/caps-lock-detect.directive';
   styleUrl: './login.component.css'
 })
 export class LoginComponent {
+  authService = inject(AuthenticationService)
   breakpointObserver = inject(BreakpointObserver)
   formWidth = ''
   showPassword = signal(false)
   capsLockState = false
 
   loginForm = new FormGroup({
-    account: new FormControl(''),
-    password: new FormControl(''),
+    account: new FormControl('', Validators.required),
+    password: new FormControl('', Validators.required),
     keepLogin: new FormControl(false)
   })
 
@@ -59,10 +61,24 @@ export class LoginComponent {
         else if (state.breakpoints[Breakpoints.Large]) this.formWidth = '25%';
         else if (state.breakpoints[Breakpoints.XLarge]) this.formWidth = '20%';
       })
+
+    this.loginForm.setValue({
+      account: 'hieuho0103',
+      password: 'Hello123#',
+      keepLogin: true,
+    })
   }
 
   login() {
-    alert(this.loginForm.value.account + ' | ' + this.loginForm.value.password)
+    this.loginForm.markAllAsTouched()
+    if (this.loginForm.valid) {
+      const { account, password, keepLogin } = this.loginForm.value
+
+      if (account && password) {
+        const loginInfo: LoginInfo = { account, password, keepLogin }
+        this.authService.login(loginInfo)
+      }
+    }
   }
 
   togglePassword(event: MouseEvent) {
