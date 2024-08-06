@@ -1,23 +1,34 @@
 import { HttpClient, HttpContextToken, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { from, mergeMap, tap } from 'rxjs';
+import { catchError, from, mergeMap, retry, tap, timer } from 'rxjs';
 
 export const E2EE_ENABLED = new HttpContextToken<boolean>(() => false)
 
 export const keyCheckingInterceptor: HttpInterceptorFn = (req, next) => {
+  const http = inject(HttpClient)
+
   if (req.context.get(E2EE_ENABLED)) {
-    const clientPublicJwkStr = localStorage.getItem('clientPublicJwkStr')
-    const clientPrivateJwkStr = localStorage.getItem('clientPrivateJwkStr')
-    const serverPublicJwkStr = localStorage.getItem('serverPublicJwkStr')
+    const clientPublicJwkStr = sessionStorage.getItem('clientPublicJwkStr')
+    const clientPrivateJwkStr = sessionStorage.getItem('clientPrivateJwkStr')
+    const serverPublicJwkStr = sessionStorage.getItem('serverPublicJwkStr')
 
     if (!clientPublicJwkStr || !clientPrivateJwkStr || !serverPublicJwkStr) {
-      const http = inject(HttpClient)
       return generateKeys(http).pipe(
         mergeMap(serverPublicJwkStr => next(req))
       )
     }
   }
-  return next(req)
+  return next(req).pipe(
+    retry({
+      delay: (err, count) => {
+        if (count > 1 || err.status !== 428)
+          throw err
+        return generateKeys(http).pipe(
+          mergeMap(serverPublicJwkStr => timer(1))
+        )
+      }
+    })
+  )
 };
 
 const rsaKeyGeneration = {
@@ -51,9 +62,9 @@ function generateKeys(http: HttpClient) {
     }),
 
     tap(_serverPublicJwkStr => {
-      localStorage.setItem('clientPublicJwkStr', JSON.stringify(clientPublicJwk))
-      localStorage.setItem('clientPrivateJwkStr', JSON.stringify(clientPrivateJwk))
-      localStorage.setItem('serverPublicJwkStr', _serverPublicJwkStr)
+      sessionStorage.setItem('clientPublicJwkStr', JSON.stringify(clientPublicJwk))
+      sessionStorage.setItem('clientPrivateJwkStr', JSON.stringify(clientPrivateJwk))
+      sessionStorage.setItem('serverPublicJwkStr', _serverPublicJwkStr)
     })
   )
 }

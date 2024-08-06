@@ -13,7 +13,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 
 import { passwordConfirmationValidator } from '../shared/password-confirmation.directive';
 import { CapsLockDetectDirective } from '../shared/caps-lock-detect.directive';
-import { AuthenticationService, SignupInfo } from '../shared/authentication.service';
+import { AuthenticationService, SignupInfo } from '../../shared/authentication.service';
 
 @Component({
   selector: 'app-signup',

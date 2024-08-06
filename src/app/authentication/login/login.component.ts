@@ -12,7 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { CapsLockDetectDirective } from '../shared/caps-lock-detect.directive';
-import { AuthenticationService, LoginInfo } from '../shared/authentication.service';
+import { AuthenticationService, LoginInfo } from '../../shared/authentication.service';
 
 @Component({
   selector: 'app-login',

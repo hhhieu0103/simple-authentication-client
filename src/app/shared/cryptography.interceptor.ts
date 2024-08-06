@@ -1,5 +1,5 @@
 import { HttpEventType, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
-import { mergeMap, filter, map, tap, from } from 'rxjs';
+import { mergeMap, filter, map, tap, from, catchError } from 'rxjs';
 import { E2EE_ENABLED } from './key-checking.interceptor';
 
 export const cryptographyInterceptor: HttpInterceptorFn = (req, next) => {
@@ -23,6 +23,9 @@ export const cryptographyInterceptor: HttpInterceptorFn = (req, next) => {
 
     let e: HttpResponse<ArrayBuffer>
     return newEvent.pipe(
+      catchError((err) => {
+        throw err
+      }),
       filter(event => event.type == HttpEventType.Response),
       tap(event => e = (event as HttpResponse<ArrayBuffer>)),
       mergeMap(event => decrypt((event as HttpResponse<ArrayBuffer>).body as ArrayBuffer)),
@@ -38,7 +41,7 @@ const rsa = {
 }
 
 function encrypt(message: string) {
-  const serverPublicJwkStr = localStorage.getItem('serverPublicJwkStr')
+  const serverPublicJwkStr = sessionStorage.getItem('serverPublicJwkStr')
   if (!serverPublicJwkStr) throw new Error('Missing server public key.')
   const serverPublicJwk = JSON.parse(serverPublicJwkStr)
   const encoded = new TextEncoder().encode(message)
@@ -47,7 +50,7 @@ function encrypt(message: string) {
 }
 
 function decrypt(encrypted: ArrayBuffer) {
-  const clientPrivateJwkStr = localStorage.getItem('clientPrivateJwkStr')
+  const clientPrivateJwkStr = sessionStorage.getItem('clientPrivateJwkStr')
   if (!clientPrivateJwkStr) throw new Error('Missing client private key.')
   const clientPrivateJwk = JSON.parse(clientPrivateJwkStr)
   return from(window.crypto.subtle.importKey('jwk', clientPrivateJwk, rsa, true, ['decrypt']))
