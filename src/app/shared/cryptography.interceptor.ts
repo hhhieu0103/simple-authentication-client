@@ -1,13 +1,17 @@
 import { HttpEventType, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
-import { mergeMap, filter, map, tap, from, catchError } from 'rxjs';
+import { mergeMap, filter, map, tap, catchError } from 'rxjs';
 import { E2EE_ENABLED } from './key-checking.interceptor';
+import { CryptographyService } from './cryptography.service';
+import { inject } from '@angular/core';
 
 export const cryptographyInterceptor: HttpInterceptorFn = (req, next) => {
+  let cryptoService = inject(CryptographyService)
+
   if (req.context.get(E2EE_ENABLED)) {
 
     let encryptObs = null
-    if (typeof (req.body) == 'string') encryptObs = encrypt(req.body)
-    else encryptObs = encrypt(JSON.stringify(req.body))
+    if (typeof (req.body) == 'string') encryptObs = cryptoService.encrypt(req.body)
+    else encryptObs = cryptoService.encrypt(JSON.stringify(req.body))
 
     const newEvent = encryptObs.pipe(
       mergeMap(bodyAb => {
@@ -23,39 +27,13 @@ export const cryptographyInterceptor: HttpInterceptorFn = (req, next) => {
 
     let e: HttpResponse<ArrayBuffer>
     return newEvent.pipe(
-      catchError((err) => {
-        throw err
-      }),
+      catchError((err) => { throw err }),
       filter(event => event.type == HttpEventType.Response),
       tap(event => e = (event as HttpResponse<ArrayBuffer>)),
-      mergeMap(event => decrypt((event as HttpResponse<ArrayBuffer>).body as ArrayBuffer)),
+      mergeMap(event => cryptoService.decrypt((event as HttpResponse<ArrayBuffer>).body as ArrayBuffer)),
       map(decrypted => e.clone({ body: JSON.parse(decrypted) }))
     );
   }
   return next(req);
 };
 
-const rsa = {
-  name: "RSA-OAEP",
-  hash: "SHA-256",
-}
-
-function encrypt(message: string) {
-  const serverPublicJwkStr = sessionStorage.getItem('serverPublicJwkStr')
-  if (!serverPublicJwkStr) throw new Error('Missing server public key.')
-  const serverPublicJwk = JSON.parse(serverPublicJwkStr)
-  const encoded = new TextEncoder().encode(message)
-  return from(window.crypto.subtle.importKey('jwk', serverPublicJwk, rsa, true, ['encrypt']))
-    .pipe(mergeMap(serverPublicKey => window.crypto.subtle.encrypt(rsa, serverPublicKey, encoded)))
-}
-
-function decrypt(encrypted: ArrayBuffer) {
-  const clientPrivateJwkStr = sessionStorage.getItem('clientPrivateJwkStr')
-  if (!clientPrivateJwkStr) throw new Error('Missing client private key.')
-  const clientPrivateJwk = JSON.parse(clientPrivateJwkStr)
-  return from(window.crypto.subtle.importKey('jwk', clientPrivateJwk, rsa, true, ['decrypt']))
-    .pipe(
-      mergeMap(clientPrivateKey => window.crypto.subtle.decrypt(rsa, clientPrivateKey, encrypted)),
-      map(decrypted => new TextDecoder().decode(decrypted))
-    )
-}

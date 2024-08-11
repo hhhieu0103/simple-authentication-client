@@ -11,7 +11,7 @@ describe('keyCheckingInterceptor', () => {
     TestBed.configureTestingModule({});
   });
 
-  it('should be created', () => {
+  it('keys should be generated', () => {
     expect(interceptor).toBeTruthy();
   });
 });

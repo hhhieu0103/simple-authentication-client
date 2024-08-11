@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { NgOptimizedImage } from '@angular/common';
 
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +11,7 @@ import { AuthenticationService } from '../shared/authentication.service';
   selector: 'app-home',
   standalone: true,
   imports: [
+    NgOptimizedImage,
     MatProgressSpinner,
     MatButtonModule,
   ],

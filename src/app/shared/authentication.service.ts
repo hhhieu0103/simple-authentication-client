@@ -1,7 +1,7 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { E2EE_ENABLED } from './key-checking.interceptor';
-import { Observable } from 'rxjs';
+import { catchError, Observable, retry, take } from 'rxjs';
 import { Router } from '@angular/router';
 
 export interface SignupInfo {
@@ -38,16 +38,21 @@ export class AuthenticationService {
 
   login(loginInfo: LoginInfo) {
     this.http.post(this.baseUrl + 'login', loginInfo, this.options)
-      .subscribe({
-        next: (res) => {
-          console.log(res)
-          if (loginInfo.keepLogin) localStorage.setItem('account', JSON.stringify(res))
-          else sessionStorage.setItem('account', JSON.stringify(res))
-          this.router.navigate(['home'])
-        },
-        error: (err) => {
-          console.log(err)
-        }
+      .pipe(
+        catchError((err, caught) => {
+          if (err.status == 428) {
+            sessionStorage.clear()
+            return caught
+          }
+          throw err
+        }),
+        take(1)
+      )
+      .subscribe((res) => {
+        console.log(res)
+        if (loginInfo.keepLogin) localStorage.setItem('account', JSON.stringify(res))
+        else sessionStorage.setItem('account', JSON.stringify(res))
+        this.router.navigate(['home'])
       })
   }
 
