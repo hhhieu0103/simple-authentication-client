@@ -143,6 +143,8 @@ export class SignupComponent {
           errorMessages.push('Username should be 8 to 24 characters')
         else if (control?.hasError('pattern'))
           errorMessages.push('Username cannot contain special characters')
+        else if (control?.hasError('inUse'))
+          errorMessages.push('Username is already in use')
         break;
 
       case 'email':
@@ -150,6 +152,8 @@ export class SignupComponent {
           errorMessages.push('Email is required')
         else if (control?.hasError('email'))
           errorMessages.push('Email format is not valid')
+        else if (control?.hasError('inUse'))
+          errorMessages.push('Email is already in use')
         break;
 
       case 'password':
@@ -187,9 +191,24 @@ export class SignupComponent {
 
       if (email && username && password) {
         const acc: SignupInfo = { email, username, password }
-        this.authService.signup(acc)
-      }
+        this.authService.signup(acc).subscribe({
+          error: (err) => {
+            err.error = JSON.parse(err.error)
 
+            if (err.error.email) {
+              const control = this.signupForm.get('email')
+              control?.setErrors({ inUse: true })
+            }
+
+            else if (err.error.username) {
+              const control = this.signupForm.get('username')
+              control?.setErrors({ inUse: true })
+            }
+
+            else throw err
+          }
+        })
+      }
     }
   }
 }

@@ -1,11 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { from, map, mergeMap, tap } from 'rxjs';
+import { CookieService } from './cookie.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CryptographyService {
+
   rsa = {
     name: "RSA-OAEP",
     hash: "SHA-256",
@@ -18,10 +20,13 @@ export class CryptographyService {
     publicExponent: new Uint8Array([1, 0, 1]),
   }
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private cookieService: CookieService
+  ) { }
 
   encrypt(message: string) {
-    const serverPublicJwkStr = sessionStorage.getItem('serverPublicJwkStr')
+    const serverPublicJwkStr = this.cookieService.getCookie('serverPublicJwkStr')
     if (!serverPublicJwkStr) throw new Error('Missing server public key.')
     const serverPublicJwk = JSON.parse(serverPublicJwkStr)
     const encoded = new TextEncoder().encode(message)
@@ -56,9 +61,6 @@ export class CryptographyService {
         'http://localhost:3000/authentication/exchangePublicKey',
         keys[0], { responseType: 'text', withCredentials: true }
       )),
-      tap(serverPublicJwkStr => {
-        sessionStorage.setItem('serverPublicJwkStr', serverPublicJwkStr)
-      }),
     )
   }
 }

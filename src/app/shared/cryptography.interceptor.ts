@@ -27,7 +27,10 @@ export const cryptographyInterceptor: HttpInterceptorFn = (req, next) => {
 
     let e: HttpResponse<ArrayBuffer>
     return newEvent.pipe(
-      catchError((err) => { throw err }),
+      catchError((err) => {
+        err.error = new TextDecoder().decode(err.error)
+        throw err
+      }),
       filter(event => event.type == HttpEventType.Response),
       tap(event => e = (event as HttpResponse<ArrayBuffer>)),
       mergeMap(event => cryptoService.decrypt((event as HttpResponse<ArrayBuffer>).body as ArrayBuffer)),

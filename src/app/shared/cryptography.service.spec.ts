@@ -1,9 +1,11 @@
 import { CryptographyService } from './cryptography.service';
 import { HttpClient } from '@angular/common/http';
-import { of } from 'rxjs';
+import { from, mergeMap, of, tap } from 'rxjs';
+import { CookieService } from './cookie.service';
 
 describe('CryptographyService', () => {
   let cryptoService: CryptographyService;
+  let cookieService: CookieService;
   let httpClientSpy: jasmine.SpyObj<HttpClient>;
   let mockKeyPair: CryptoKeyPair;
   let mockPublicJwk: JsonWebKey;
@@ -11,13 +13,10 @@ describe('CryptographyService', () => {
   const message = 'I\'m not a bad slime'
   const encoded = new TextEncoder().encode(message)
 
-  beforeEach(async () => {
-    httpClientSpy = jasmine.createSpyObj('HttpClient', ['post']);
-    cryptoService = new CryptographyService(httpClientSpy);
-  });
-
   beforeAll(async () => {
-    cryptoService = new CryptographyService(httpClientSpy);
+    httpClientSpy = jasmine.createSpyObj('HttpClient', ['post']);
+    cookieService = new CookieService();
+    cryptoService = new CryptographyService(httpClientSpy, new CookieService())
     mockKeyPair = await window.crypto.subtle.generateKey(cryptoService.rsaKeyGeneration, true, ["encrypt", "decrypt"]);
     mockPublicJwk = await window.crypto.subtle.exportKey('jwk', mockKeyPair.publicKey);
     mockPrivateJwk = await window.crypto.subtle.exportKey('jwk', mockKeyPair.privateKey);
@@ -25,20 +24,22 @@ describe('CryptographyService', () => {
 
   afterEach(() => {
     sessionStorage.clear()
+    cookieService.deleteCookie('serverPublicJwkStr')
   })
 
   it('#setupSecureConnection generates, stores and exchanges keys', (done: DoneFn) => {
-    httpClientSpy.post.and.returnValue(of(JSON.stringify(mockPublicJwk)))
-    cryptoService.setupSecureConnection().subscribe(async serverJwkStr => {
+    httpClientSpy.post.and.returnValue(of(''))
+    document.cookie = "serverPublicJwkStr=" + JSON.stringify(mockPublicJwk);
+    cryptoService.setupSecureConnection().subscribe(async () => {
       // Expect keys are store in session storage
       const clientPublicJwkStr = sessionStorage.getItem('clientPublicJwkStr')
       const clientPrivateJwkStr = sessionStorage.getItem('clientPrivateJwkStr')
-      const serverPublicJwkStr = sessionStorage.getItem('serverPublicJwkStr')
+      const serverPublicJwkStr = cookieService.getCookie('serverPublicJwkStr')
 
       if (!clientPublicJwkStr || !clientPrivateJwkStr || !serverPublicJwkStr)
         fail('Keys are not stored in session storage')
 
-      expect(serverPublicJwkStr).withContext('Server public key stored in session storage').toBe(JSON.stringify(mockPublicJwk))
+      expect(serverPublicJwkStr).withContext('Server public key stored in cookie').toBe(JSON.stringify(mockPublicJwk))
 
       //Expect keys are importable
       let clientPublicKey: CryptoKey | undefined = undefined
@@ -65,7 +66,7 @@ describe('CryptographyService', () => {
 
   it('#encrypt encrypt message using stored server public key', (done: DoneFn) => {
     expect(() => { cryptoService.encrypt(message) }).toThrowError('Missing server public key.')
-    sessionStorage.setItem('serverPublicJwkStr', JSON.stringify(mockPublicJwk))
+    document.cookie = "serverPublicJwkStr=" + JSON.stringify(mockPublicJwk);
     cryptoService.encrypt(message).subscribe(async encrypted => {
       const decrypted = await window.crypto.subtle.decrypt(cryptoService.rsa, mockKeyPair.privateKey, encrypted)
       const decoded = new TextDecoder().decode(decrypted)
@@ -74,13 +75,20 @@ describe('CryptographyService', () => {
     })
   })
 
-  it('#decrypt decrypt message using stored client private key', async () => {
-    const encrypted = await window.crypto.subtle.encrypt(cryptoService.rsa, mockKeyPair.publicKey, encoded)
-    expect(() => { cryptoService.decrypt(encrypted) }).toThrowError('Missing client private key.')
-    sessionStorage.setItem('clientPrivateJwkStr', JSON.stringify(mockPrivateJwk))
-    cryptoService.decrypt(encrypted).subscribe(decoded => {
-      expect(decoded).toBe(message)
-    })
+  it('#decrypt decrypt message using stored client private key', (done: DoneFn) => {
+    from(window.crypto.subtle.encrypt(cryptoService.rsa, mockKeyPair.publicKey, encoded))
+      .pipe(
+        tap(encrypted => {
+          expect(() => { cryptoService.decrypt(encrypted) })
+            .toThrowError('Missing client private key.')
+          sessionStorage.setItem('clientPrivateJwkStr', JSON.stringify(mockPrivateJwk))
+        }),
+        mergeMap(encrypted => cryptoService.decrypt(encrypted))
+      )
+      .subscribe(decoded => {
+        expect(decoded).toBe(message)
+        done()
+      })
   })
 });
 
