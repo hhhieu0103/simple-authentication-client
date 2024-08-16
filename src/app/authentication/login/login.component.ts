@@ -76,7 +76,14 @@ export class LoginComponent {
 
       if (account && password) {
         const loginInfo: LoginInfo = { account, password, keepLogin }
-        this.authService.login(loginInfo)
+        this.authService.login(loginInfo).subscribe({
+          next: (res) => {
+            console.log(res)
+          },
+          error: (err) => {
+            console.log(err)
+          }
+        })
       }
     }
   }
